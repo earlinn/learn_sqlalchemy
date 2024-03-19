@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     DB_NAME: str
 
     @property
-    def DATABASE_URL_asyncpg(self):
+    def database_url_asyncpg(self):
         return URL.create(
             "postgresql+asyncpg",
             self.DB_USER,
@@ -26,7 +26,7 @@ class Settings(BaseSettings):
         )
 
     @property
-    def DATABASE_URL_psycopg(self):
+    def database_url_psycopg(self):
         return URL.create(
             "postgresql+psycopg",
             self.DB_USER,
