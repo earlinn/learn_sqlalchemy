@@ -1,4 +1,4 @@
-from sqlalchemy import insert, select, text
+from sqlalchemy import insert, select, text, update
 
 from database import async_engine, sync_engine
 from models import metadata_obj, workers_table
@@ -45,7 +45,12 @@ class SyncCore:
     def update_worker(worker_id: int = 2, new_username: str = "Micha"):
         with sync_engine.connect() as conn:
             # to avoid SQL injections as we can't use f-strings (SQL injections risk)
-            statement = text("UPDATE workers SET username=:username WHERE id=:id")
-            statement = statement.bindparams(username=new_username, id=worker_id)
+            # statement = text("UPDATE workers SET username=:username WHERE id=:id")
+            # statement = statement.bindparams(username=new_username, id=worker_id)
+            statement = (
+                update(workers_table)
+                .values(username=new_username)
+                .filter_by(id=worker_id)
+            )
             conn.execute(statement)
             conn.commit()
