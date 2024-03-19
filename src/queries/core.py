@@ -1,7 +1,7 @@
-from sqlalchemy import text
+from sqlalchemy import insert, text
 
 from database import async_engine, sync_engine
-from models import metadata_obj
+from models import metadata_obj, workers_table
 
 
 def get_sync_123():
@@ -25,6 +25,8 @@ def create_tables():
 
 def insert_data():
     with sync_engine.connect() as conn:
-        statement = "INSERT INTO workers (username) VALUES ('Bobr'), ('Volk');"
-        conn.execute(text(statement))
+        statement = insert(workers_table).values(
+            [{"username": "Bobr"}, {"username": "Volk"}]
+        )
+        conn.execute(statement)
         conn.commit()
