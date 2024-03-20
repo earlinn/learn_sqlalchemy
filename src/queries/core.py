@@ -1,4 +1,4 @@
-from sqlalchemy import insert, select, text, update
+from sqlalchemy import Integer, and_, func, insert, select, text, update
 
 from database import async_engine, sync_engine
 from models import WorkLoad, cvs_table, metadata_obj, workers_table
@@ -88,6 +88,38 @@ class SyncCore:
             conn.execute(statement)
             conn.commit()
 
+    @staticmethod
+    def select_cvs_avg_compensation(like_language: str = "Python"):
+        """
+        select workload, avg(compensation)::int as avg_compensation
+        from resumes
+        where title like '%Python%' and compensation > 40000
+        group by workload
+        having avg(compensation) > 70000
+        """
+        with sync_engine.connect() as conn:
+            query = (
+                select(
+                    cvs_table.c.workload,
+                    func.avg(cvs_table.c.compensation)
+                    .cast(Integer)
+                    .label("avg_compensation"),
+                )
+                .select_from(cvs_table)
+                .filter(
+                    and_(
+                        cvs_table.c.title.contains(like_language),
+                        cvs_table.c.compensation > 40000,
+                    )
+                )
+                .group_by(cvs_table.c.workload)
+                .having(func.avg(cvs_table.c.compensation) > 70000)
+            )
+            print(query.compile(compile_kwargs={"literal_binds": True}))
+            res = conn.execute(query)
+            result = res.all()
+            print(result[0].avg_compensation)
+
 
 class AsyncCore:
     @staticmethod
@@ -159,3 +191,35 @@ class AsyncCore:
             statement = insert(cvs_table).values(cvs)
             await conn.execute(statement)
             await conn.commit()
+
+    @staticmethod
+    async def select_cvs_avg_compensation(like_language: str = "Python"):
+        """
+        select workload, avg(compensation)::int as avg_compensation
+        from resumes
+        where title like '%Python%' and compensation > 40000
+        group by workload
+        having avg(compensation) > 70000
+        """
+        async with async_engine.connect() as conn:
+            query = (
+                select(
+                    cvs_table.c.workload,
+                    func.avg(cvs_table.c.compensation)
+                    .cast(Integer)
+                    .label("avg_compensation"),
+                )
+                .select_from(cvs_table)
+                .filter(
+                    and_(
+                        cvs_table.c.title.contains(like_language),
+                        cvs_table.c.compensation > 40000,
+                    )
+                )
+                .group_by(cvs_table.c.workload)
+                .having(func.avg(cvs_table.c.compensation) > 70000)
+            )
+            print(query.compile(compile_kwargs={"literal_binds": True}))
+            res = await conn.execute(query)
+            result = res.all()
+            print(result[0].avg_compensation)

@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, and_, cast, func, select
+from sqlalchemy import Integer, and_, func, select
 
 from database import (
     Base,
@@ -86,9 +86,9 @@ class SyncORM:
             query = (
                 select(
                     CVORM.workload,
-                    cast(func.avg(CVORM.compensation), Integer).label(
-                        "avg_compensation"
-                    ),
+                    func.avg(CVORM.compensation)
+                    .cast(Integer)
+                    .label("avg_compensation"),
                 )
                 .select_from(CVORM)
                 .filter(
@@ -98,7 +98,7 @@ class SyncORM:
                     )
                 )
                 .group_by(CVORM.workload)
-                .having(cast(func.avg(CVORM.compensation), Integer) > 70000)
+                .having(func.avg(CVORM.compensation).cast(Integer) > 70000)
             )
             print(query.compile(compile_kwargs={"literal_binds": True}))
             res = session.execute(query)
