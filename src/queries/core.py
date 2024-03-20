@@ -1,7 +1,7 @@
 from sqlalchemy import insert, select, text, update
 
 from database import async_engine, sync_engine
-from models import metadata_obj, workers_table
+from models import WorkLoad, cvs_table, metadata_obj, workers_table
 
 
 def get_sync_123():
@@ -55,6 +55,39 @@ class SyncCore:
             conn.execute(statement)
             conn.commit()
 
+    @staticmethod
+    def insert_cvs():
+        with sync_engine.connect() as conn:
+            cvs = [
+                {
+                    "title": "Python Junior Developer",
+                    "compensation": 50000,
+                    "workload": WorkLoad.fulltime,
+                    "worker_id": 1,
+                },
+                {
+                    "title": "Python Разработчик",
+                    "compensation": 150000,
+                    "workload": WorkLoad.fulltime,
+                    "worker_id": 1,
+                },
+                {
+                    "title": "Python Data Engineer",
+                    "compensation": 250000,
+                    "workload": WorkLoad.parttime,
+                    "worker_id": 2,
+                },
+                {
+                    "title": "Data Scientist",
+                    "compensation": 300000,
+                    "workload": WorkLoad.fulltime,
+                    "worker_id": 2,
+                },
+            ]
+            statement = insert(cvs_table).values(cvs)
+            conn.execute(statement)
+            conn.commit()
+
 
 class AsyncCore:
     @staticmethod
@@ -91,5 +124,38 @@ class AsyncCore:
                 .values(username=new_username)
                 .filter_by(id=worker_id)
             )
+            await conn.execute(statement)
+            await conn.commit()
+
+    @staticmethod
+    async def insert_cvs():
+        async with async_engine.connect() as conn:
+            cvs = [
+                {
+                    "title": "Python Junior Developer",
+                    "compensation": 50000,
+                    "workload": WorkLoad.fulltime,
+                    "worker_id": 1,
+                },
+                {
+                    "title": "Python Разработчик",
+                    "compensation": 150000,
+                    "workload": WorkLoad.fulltime,
+                    "worker_id": 1,
+                },
+                {
+                    "title": "Python Data Engineer",
+                    "compensation": 250000,
+                    "workload": WorkLoad.parttime,
+                    "worker_id": 2,
+                },
+                {
+                    "title": "Data Scientist",
+                    "compensation": 300000,
+                    "workload": WorkLoad.fulltime,
+                    "worker_id": 2,
+                },
+            ]
+            statement = insert(cvs_table).values(cvs)
             await conn.execute(statement)
             await conn.commit()
