@@ -16,6 +16,9 @@ async def main():
     # SyncCore.update_worker()
 
     await AsyncCore.create_tables()
+    await AsyncCore.insert_workers()
+    await AsyncCore.select_workers()
+    await AsyncCore.update_worker()
 
     # SyncORM.create_tables()
     # SyncORM.insert_workers()

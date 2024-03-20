@@ -62,3 +62,34 @@ class AsyncCore:
         async with async_engine.begin() as conn:
             await conn.run_sync(metadata_obj.drop_all)
             await conn.run_sync(metadata_obj.create_all)
+
+    @staticmethod
+    async def insert_workers():
+        async with async_engine.connect() as conn:
+            statement = insert(workers_table).values(
+                [{"username": "Jack"}, {"username": "Michael"}]
+            )
+            await conn.execute(statement)
+            await conn.commit()
+
+    @staticmethod
+    async def select_workers():
+        async with async_engine.connect() as conn:
+            query = select(workers_table)  # SELECT * FROM workers;
+            result = await conn.execute(query)
+            workers = result.all()
+            print(f"{workers=}")
+
+    @staticmethod
+    async def update_worker(worker_id: int = 2, new_username: str = "Micha"):
+        async with async_engine.connect() as conn:
+            # to avoid SQL injections as we can't use f-strings (SQL injections risk)
+            # statement = text("UPDATE workers SET username=:username WHERE id=:id")
+            # statement = statement.bindparams(username=new_username, id=worker_id)
+            statement = (
+                update(workers_table)
+                .values(username=new_username)
+                .filter_by(id=worker_id)
+            )
+            await conn.execute(statement)
+            await conn.commit()
