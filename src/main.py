@@ -19,11 +19,14 @@ async def main():
     # SyncORM.select_workers()
     # SyncORM.update_worker()
     # SyncORM.insert_cvs()
-    # SyncORM.select_cvs_avg_compendation()
+    # SyncORM.select_cvs_avg_compensation()
 
     await AsyncORM.create_tables()
     await AsyncORM.insert_workers()
     await AsyncORM.select_workers()
+    await AsyncORM.update_worker()
+    await AsyncORM.insert_cvs()
+    await AsyncORM.select_cvs_avg_compensation()
 
 
 if __name__ == "__main__":

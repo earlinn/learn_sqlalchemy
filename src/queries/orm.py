@@ -74,7 +74,7 @@ class SyncORM:
             session.commit()
 
     @staticmethod
-    def select_cvs_avg_compendation(like_language: str = "Python"):
+    def select_cvs_avg_compensation(like_language: str = "Python"):
         """
         select workload, avg(compensation)::int as avg_compensation
         from resumes
@@ -129,3 +129,76 @@ class AsyncORM:
             result = await session.execute(query)
             workers = result.scalars().all()
             print(f"{workers=}")
+
+    @staticmethod
+    async def update_worker(worker_id: int = 2, new_username: str = "Micha"):
+        async with async_session_factory() as session:
+            worker_michael = await session.get(WorkersORM, worker_id)
+            worker_michael.username = new_username
+            await session.refresh(worker_michael)
+            await session.commit()
+
+    @staticmethod
+    async def insert_cvs():
+        async with async_session_factory() as session:
+            cv_jack_1 = CVORM(
+                title="Python Junior Developer",
+                compensation=50000,
+                workload=WorkLoad.fulltime,
+                worker_id=1,
+            )
+            cv_jack_2 = CVORM(
+                title="Python Разработчик",
+                compensation=150000,
+                workload=WorkLoad.fulltime,
+                worker_id=1,
+            )
+            cv_michael_1 = CVORM(
+                title="Python Data Engineer",
+                compensation=250000,
+                workload=WorkLoad.parttime,
+                worker_id=2,
+            )
+            cv_michael_2 = CVORM(
+                title="Data Scientist",
+                compensation=300000,
+                workload=WorkLoad.fulltime,
+                worker_id=2,
+            )
+            session.add_all([cv_jack_1, cv_jack_2, cv_michael_1, cv_michael_2])
+            await session.commit()
+
+    @staticmethod
+    async def select_cvs_avg_compensation(like_language: str = "Python"):
+        """
+        select workload, avg(compensation)::int as avg_compensation
+        from resumes
+        where title like '%Python%' and compensation > 40000
+        group by workload
+        having avg(compensation) > 70000
+        """
+        async with async_session_factory() as session:
+            query = (
+                select(
+                    CVORM.workload,
+                    # 1 вариант использования cast
+                    # cast(func.avg(CVORM.compensation), Integer)
+                    # .label("avg_compensation"),
+                    # 2 вариант использования cast (предпочтительный способ)
+                    func.avg(CVORM.compensation)
+                    .cast(Integer)
+                    .label("avg_compensation"),
+                )
+                .select_from(CVORM)
+                .filter(
+                    and_(
+                        CVORM.title.contains(like_language), CVORM.compensation > 40000
+                    )
+                )
+                .group_by(CVORM.workload)
+                .having(func.avg(CVORM.compensation) > 70000)
+            )
+            print(query.compile(compile_kwargs={"literal_binds": True}))
+            res = await session.execute(query)
+            result = res.all()
+            print(result[0].avg_compensation)
