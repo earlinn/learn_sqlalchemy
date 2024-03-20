@@ -17,3 +17,5 @@ SyncORM.insert_workers()
 
 SyncORM.select_workers()
 SyncORM.update_worker()
+SyncORM.insert_cvs()
+SyncORM.select_cvs_avg_compendation()
