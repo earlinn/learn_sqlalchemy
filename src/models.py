@@ -4,9 +4,11 @@ from typing import Annotated
 
 from sqlalchemy import (
     TIMESTAMP,
+    CheckConstraint,
     Column,
     Enum,
     ForeignKey,
+    Index,
     Integer,
     MetaData,
     String,
@@ -72,6 +74,13 @@ class CVORM(Base):
     # переопределение этих параметров класса Base:
     repr_cols_num = 2
     repr_cols = ("created_at",)
+
+    # можно сюда добавлять также PK и FK, но для повышения читабельности их лучше делать
+    #  при объявлении соответствующих столбцов
+    __table_args__ = (
+        Index("title_index", "title"),
+        CheckConstraint("compensation > 0", name="check_compensation_positive"),
+    )
 
 
 metadata_obj = MetaData()

@@ -272,6 +272,10 @@ class SyncORM:
             print(result)
 
 
+# more info on limiting joinedloaded results:
+# https://stackoverflow.com/questions/72096054/sqlalchemy-limit-the-joinedloaded-results
+
+
 class AsyncORM:
     @staticmethod
     async def create_tables():
