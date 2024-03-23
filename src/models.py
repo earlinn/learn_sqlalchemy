@@ -13,7 +13,7 @@ from sqlalchemy import (
     Table,
     text,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, str_256
 
@@ -36,6 +36,8 @@ class WorkersORM(Base):
     id: Mapped[intpk]
     username: Mapped[str]
 
+    cvs: Mapped[list["CVORM"]] = relationship()
+
 
 class WorkLoad(enum.Enum):
     parttime = "parttime"
@@ -52,6 +54,8 @@ class CVORM(Base):
     worker_id: Mapped[int] = mapped_column(ForeignKey("workers.id", ondelete="CASCADE"))
     created_at: Mapped[created_at]
     updated_at: Mapped[updated_at]
+
+    worker: Mapped["WorkersORM"] = relationship()
 
 
 metadata_obj = MetaData()

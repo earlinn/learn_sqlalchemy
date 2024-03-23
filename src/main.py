@@ -38,6 +38,9 @@ async def main():
         SyncORM.select_cvs_avg_compensation()
         SyncORM.insert_additional_cvs()
         SyncORM.join_cte_subquery_window_func()
+        SyncORM.select_workers_with_lazy_relationship()
+        SyncORM.select_workers_with_joined_relationship()
+        SyncORM.select_workers_with_selectin_relationship()
 
     elif "--orm" in sys.argv and "--async" in sys.argv:
         await AsyncORM.create_tables()

@@ -1,5 +1,5 @@
 from sqlalchemy import Integer, and_, func, insert, select
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, joinedload, selectinload
 
 from database import (
     Base,
@@ -200,6 +200,38 @@ class SyncORM:
             # print(query.compile(compile_kwargs={"literal_binds": True}))
             result = session.execute(query).all()
             print(f"{result=}")
+
+    @staticmethod
+    def select_workers_with_lazy_relationship():
+        with sync_session_factory() as session:
+            query = select(WorkersORM)
+            result = session.execute(query).scalars().all()
+            worker_1_cvs = result[0].cvs
+            print(worker_1_cvs)
+            worker_2_cvs = result[1].cvs
+            print(worker_2_cvs)
+
+    @staticmethod
+    def select_workers_with_joined_relationship():
+        # joinedload - для m2o и o2o (ниже не тот случай)
+        with sync_session_factory() as session:
+            query = select(WorkersORM).options(joinedload(WorkersORM.cvs))
+            result = session.execute(query).unique().scalars().all()
+            worker_1_cvs = result[0].cvs
+            print(worker_1_cvs)
+            worker_2_cvs = result[1].cvs
+            print(worker_2_cvs)
+
+    @staticmethod
+    def select_workers_with_selectin_relationship():
+        # selectinload - для o2m (наш случай) и m2m
+        with sync_session_factory() as session:
+            query = select(WorkersORM).options(selectinload(WorkersORM.cvs))
+            result = session.execute(query).unique().scalars().all()
+            worker_1_cvs = result[0].cvs
+            print(worker_1_cvs)
+            worker_2_cvs = result[1].cvs
+            print(worker_2_cvs)
 
 
 class AsyncORM:

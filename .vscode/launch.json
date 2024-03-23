@@ -12,6 +12,46 @@
             "console": "integratedTerminal",
             "justMyCode": true,
 
+        },
+        {
+            "name": "SyncORM",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": ["--sync", "--orm"]
+
+        },
+        {
+            "name": "AsyncORM",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": ["--async", "--orm"]
+
+        },
+        {
+            "name": "SyncCore",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": ["--sync", "--core"]
+
+        },
+        {
+            "name": "AsyncCore",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": ["--async", "--core"]
+
         }
     ]
 }
