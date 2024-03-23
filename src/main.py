@@ -16,6 +16,8 @@ async def main():
         SyncCore.update_worker()
         SyncCore.insert_cvs()
         SyncCore.select_cvs_avg_compensation()
+        SyncCore.insert_additional_cvs()
+        SyncCore.join_cte_subquery_window_func()
 
     elif "--core" in sys.argv and "--async" in sys.argv:
         await AsyncCore.create_tables()
@@ -24,6 +26,8 @@ async def main():
         await AsyncCore.update_worker()
         await AsyncCore.insert_cvs()
         await AsyncCore.select_cvs_avg_compensation()
+        await AsyncCore.insert_additional_cvs()
+        await AsyncCore.join_cte_subquery_window_func()
 
     elif "--orm" in sys.argv and "--sync" in sys.argv:
         SyncORM.create_tables()
@@ -42,6 +46,8 @@ async def main():
         await AsyncORM.update_worker()
         await AsyncORM.insert_cvs()
         await AsyncORM.select_cvs_avg_compensation()
+        await AsyncORM.insert_additional_cvs()
+        await AsyncORM.join_cte_subquery_window_func()
 
 
 if __name__ == "__main__":

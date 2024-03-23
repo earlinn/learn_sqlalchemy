@@ -1,4 +1,5 @@
 from sqlalchemy import Integer, and_, func, insert, select, text, update
+from sqlalchemy.orm import aliased
 
 from database import async_engine, sync_engine
 from models import WorkLoad, cvs_table, metadata_obj, workers_table
@@ -120,6 +121,101 @@ class SyncCore:
             result = res.all()
             print(result[0].avg_compensation)
 
+    @staticmethod
+    def insert_additional_cvs():
+        with sync_engine.connect() as conn:
+            workers = [
+                {"username": "Artem"},
+                {"username": "Roman"},
+                {"username": "Petr"},
+            ]
+            cvs = [
+                {
+                    "title": "Python программист",
+                    "compensation": 60000,
+                    "workload": "fulltime",
+                    "worker_id": 3,
+                },
+                {
+                    "title": "Machine Learning Engineer",
+                    "compensation": 70000,
+                    "workload": "parttime",
+                    "worker_id": 3,
+                },
+                {
+                    "title": "Python Data Scientist",
+                    "compensation": 80000,
+                    "workload": "parttime",
+                    "worker_id": 4,
+                },
+                {
+                    "title": "Python Analyst",
+                    "compensation": 90000,
+                    "workload": "fulltime",
+                    "worker_id": 4,
+                },
+                {
+                    "title": "Python Junior Developer",
+                    "compensation": 100000,
+                    "workload": "fulltime",
+                    "worker_id": 5,
+                },
+            ]
+            insert_workers = insert(workers_table).values(workers)
+            insert_cvs = insert(cvs_table).values(cvs)
+            conn.execute(insert_workers)
+            conn.execute(insert_cvs)
+            conn.commit()
+
+    @staticmethod
+    def join_cte_subquery_window_func():
+        """
+        WITH helper2 AS (
+            SELECT *, compensation-avg_workload_compensation AS compensation_diff
+            FROM
+            (SELECT
+                w.id,
+                w.username,
+                c.compensation,
+                c.workload,
+                avg(c.compensation) OVER (PARTITION BY workload)::int
+                AS avg_workload_compensation
+            FROM cvs c
+            JOIN workers w ON c.worker_id = w.id) helper1
+        )
+        SELECT * FROM helper2
+        ORDER BY compensation_diff DESC
+        """
+        with sync_engine.connect() as conn:
+            c = aliased(cvs_table)
+            w = aliased(workers_table)
+            subq = (
+                select(
+                    c,
+                    w,
+                    func.avg(c.c.compensation)
+                    .over(partition_by=c.c.workload)
+                    .cast(Integer)
+                    .label("avg_workload_compensation"),
+                )
+                .join(w, c.c.worker_id == w.c.id)
+                .subquery("helper1")
+            )
+            cte = select(
+                subq.c.worker_id,
+                subq.c.username,
+                subq.c.compensation,
+                subq.c.workload,
+                subq.c.avg_workload_compensation,
+                (subq.c.compensation - subq.c.avg_workload_compensation).label(
+                    "compensation_diff"
+                ),
+            ).cte("helper2")
+            query = select(cte).order_by(cte.c.compensation_diff.desc())
+            res = conn.execute(query)
+            result = res.all()
+            print(f"{len(result)=}. {result=}")
+
 
 class AsyncCore:
     @staticmethod
@@ -223,3 +319,98 @@ class AsyncCore:
             res = await conn.execute(query)
             result = res.all()
             print(result[0].avg_compensation)
+
+    @staticmethod
+    async def insert_additional_cvs():
+        async with async_engine.connect() as conn:
+            workers = [
+                {"username": "Artem"},
+                {"username": "Roman"},
+                {"username": "Petr"},
+            ]
+            cvs = [
+                {
+                    "title": "Python программист",
+                    "compensation": 60000,
+                    "workload": "fulltime",
+                    "worker_id": 3,
+                },
+                {
+                    "title": "Machine Learning Engineer",
+                    "compensation": 70000,
+                    "workload": "parttime",
+                    "worker_id": 3,
+                },
+                {
+                    "title": "Python Data Scientist",
+                    "compensation": 80000,
+                    "workload": "parttime",
+                    "worker_id": 4,
+                },
+                {
+                    "title": "Python Analyst",
+                    "compensation": 90000,
+                    "workload": "fulltime",
+                    "worker_id": 4,
+                },
+                {
+                    "title": "Python Junior Developer",
+                    "compensation": 100000,
+                    "workload": "fulltime",
+                    "worker_id": 5,
+                },
+            ]
+            insert_workers = insert(workers_table).values(workers)
+            insert_cvs = insert(cvs_table).values(cvs)
+            await conn.execute(insert_workers)
+            await conn.execute(insert_cvs)
+            await conn.commit()
+
+    @staticmethod
+    async def join_cte_subquery_window_func():
+        """
+        WITH helper2 AS (
+            SELECT *, compensation-avg_workload_compensation AS compensation_diff
+            FROM
+            (SELECT
+                w.id,
+                w.username,
+                c.compensation,
+                c.workload,
+                avg(c.compensation) OVER (PARTITION BY workload)::int
+                AS avg_workload_compensation
+            FROM cvs c
+            JOIN workers w ON c.worker_id = w.id) helper1
+        )
+        SELECT * FROM helper2
+        ORDER BY compensation_diff DESC
+        """
+        async with async_engine.connect() as conn:
+            c = aliased(cvs_table)
+            w = aliased(workers_table)
+            subq = (
+                select(
+                    c,
+                    w,
+                    func.avg(c.c.compensation)
+                    .over(partition_by=c.c.workload)
+                    .cast(Integer)
+                    .label("avg_workload_compensation"),
+                )
+                .join(w, c.c.worker_id == w.c.id)
+                .subquery("helper1")
+            )
+            cte = select(
+                subq.c.worker_id,
+                subq.c.username,
+                subq.c.compensation,
+                subq.c.workload,
+                subq.c.avg_workload_compensation,
+                (subq.c.compensation - subq.c.avg_workload_compensation).label(
+                    "compensation_diff"
+                ),
+            ).cte("helper2")
+            query = select(cte).order_by(cte.c.compensation_diff.desc())
+            res = await conn.execute(query)
+            result = res.all()
+            print(f"{len(result)=}. {result=}")

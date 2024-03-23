@@ -153,7 +153,7 @@ class SyncORM:
             session.commit()
 
     @staticmethod
-    def join_cte_subquery_window_func(like_language: str = "Python"):
+    def join_cte_subquery_window_func():
         """
         WITH helper2 AS (
             SELECT *, compensation-avg_workload_compensation AS compensation_diff
@@ -298,3 +298,99 @@ class AsyncORM:
             res = await session.execute(query)
             result = res.all()
             print(result[0].avg_compensation)
+
+    @staticmethod
+    async def insert_additional_cvs():
+        async with async_session_factory() as session:
+            workers = [
+                {"username": "Artem"},
+                {"username": "Roman"},
+                {"username": "Petr"},
+            ]
+            cvs = [
+                {
+                    "title": "Python программист",
+                    "compensation": 60000,
+                    "workload": "fulltime",
+                    "worker_id": 3,
+                },
+                {
+                    "title": "Machine Learning Engineer",
+                    "compensation": 70000,
+                    "workload": "parttime",
+                    "worker_id": 3,
+                },
+                {
+                    "title": "Python Data Scientist",
+                    "compensation": 80000,
+                    "workload": "parttime",
+                    "worker_id": 4,
+                },
+                {
+                    "title": "Python Analyst",
+                    "compensation": 90000,
+                    "workload": "fulltime",
+                    "worker_id": 4,
+                },
+                {
+                    "title": "Python Junior Developer",
+                    "compensation": 100000,
+                    "workload": "fulltime",
+                    "worker_id": 5,
+                },
+            ]
+            insert_workers = insert(WorkersORM).values(workers)
+            insert_resumes = insert(CVORM).values(cvs)
+            await session.execute(insert_workers)
+            await session.execute(insert_resumes)
+            await session.commit()
+
+    @staticmethod
+    async def join_cte_subquery_window_func():
+        """
+        WITH helper2 AS (
+            SELECT *, compensation-avg_workload_compensation AS compensation_diff
+            FROM
+            (SELECT
+                w.id,
+                w.username,
+                c.compensation,
+                c.workload,
+                avg(c.compensation) OVER (PARTITION BY workload)::int
+                AS avg_workload_compensation
+            FROM cvs c
+            JOIN workers w ON c.worker_id = w.id) helper1
+        )
+        SELECT * FROM helper2
+        ORDER BY compensation_diff DESC
+        """
+        async with async_session_factory() as session:
+            c = aliased(CVORM)
+            w = aliased(WorkersORM)
+            subq = (
+                select(
+                    c,
+                    w,
+                    func.avg(c.compensation)
+                    .over(partition_by=c.workload)
+                    .cast(Integer)
+                    .label("avg_workload_compensation"),
+                )
+                .join(w, c.worker_id == w.id)
+                .subquery("helper1")
+            )
+            cte = select(
+                subq.c.worker_id,
+                subq.c.username,
+                subq.c.compensation,
+                subq.c.workload,
+                subq.c.avg_workload_compensation,
+                (subq.c.compensation - subq.c.avg_workload_compensation).label(
+                    "compensation_diff"
+                ),
+            ).cte("helper2")
+            query = select(cte).order_by(cte.c.compensation_diff.desc())
+            print(query.compile(compile_kwargs={"literal_binds": True}))
+            res = await session.execute(query)
+            result = res.scalars().all()
+            print(f"{result=}")
