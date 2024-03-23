@@ -57,6 +57,10 @@ class CVORM(Base):
 
     worker: Mapped["WorkersORM"] = relationship()
 
+    # переопределение этих параметров класса Base:
+    repr_cols_num = 2
+    repr_cols = ("created_at",)
+
 
 metadata_obj = MetaData()
 
