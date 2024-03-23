@@ -36,7 +36,19 @@ class WorkersORM(Base):
     id: Mapped[intpk]
     username: Mapped[str]
 
-    cvs: Mapped[list["CVORM"]] = relationship()
+    # Можно указать на связь с worker также через backref=, но это устаревший метод,
+    # backref неявно создаст в CVORM поле worker, как если бы его там не было,
+    # но для ясности лучше прописывать такие связи явно с помощью back_populates
+    cvs: Mapped[list["CVORM"]] = relationship(back_populates="worker")
+
+    # в primaryjoin мы указываем дополнительный параметр для join - только parttime
+    cvs_parttime: Mapped[list["CVORM"]] = relationship(
+        back_populates="worker",
+        primaryjoin=(
+            "and_(WorkersORM.id == CVORM.worker_id, " "CVORM.workload == 'parttime')"
+        ),
+        order_by="CVORM.id.desc()",
+    )
 
 
 class WorkLoad(enum.Enum):
@@ -55,7 +67,7 @@ class CVORM(Base):
     created_at: Mapped[created_at]
     updated_at: Mapped[updated_at]
 
-    worker: Mapped["WorkersORM"] = relationship()
+    worker: Mapped["WorkersORM"] = relationship(back_populates="cvs")
 
     # переопределение этих параметров класса Base:
     repr_cols_num = 2

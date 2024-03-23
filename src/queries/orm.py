@@ -1,5 +1,5 @@
 from sqlalchemy import Integer, and_, func, insert, select
-from sqlalchemy.orm import aliased, joinedload, selectinload
+from sqlalchemy.orm import aliased, contains_eager, joinedload, selectinload
 
 from database import (
     Base,
@@ -232,6 +232,44 @@ class SyncORM:
             print(worker_1_cvs)
             worker_2_cvs = result[1].cvs
             print(worker_2_cvs)
+
+    @staticmethod
+    def select_workers_with_condition_relationship():
+        with sync_session_factory() as session:
+            query = select(WorkersORM).options(selectinload(WorkersORM.cvs_parttime))
+            result = session.execute(query).unique().scalars().all()
+            print(result)
+
+    @staticmethod
+    def select_workers_with_condition_relationship_contains_eager():
+        with sync_session_factory() as session:
+            query = (
+                select(WorkersORM)
+                .join(WorkersORM.cvs)
+                .options(contains_eager(WorkersORM.cvs))
+                .filter(CVORM.workload == "parttime")
+            )
+            result = session.execute(query).unique().scalars().all()
+            print(result)
+
+    @staticmethod
+    def select_workers_with_condition_relationship_contains_eager_with_limit():
+        with sync_session_factory() as session:
+            subq = (
+                select(CVORM.id.label("parttime_cv_id"))
+                .filter(CVORM.worker_id == WorkersORM.id)
+                .order_by(WorkersORM.id.desc())
+                .limit(1)
+                .scalar_subquery()
+                .correlate(WorkersORM)
+            )
+            query = (
+                select(WorkersORM)
+                .join(CVORM, CVORM.id.in_(subq))
+                .options(contains_eager(WorkersORM.cvs))
+            )
+            result = session.execute(query).unique().scalars().all()
+            print(result)
 
 
 class AsyncORM:
