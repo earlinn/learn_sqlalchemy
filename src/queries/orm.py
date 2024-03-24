@@ -479,3 +479,13 @@ class AsyncORM:
             res = await session.execute(query)
             result = res.scalars().all()
             print(f"{result=}")
+
+    @staticmethod
+    async def convert_workers_to_dto():
+        async with async_session_factory() as session:
+            query = select(WorkersORM).options(selectinload(WorkersORM.cvs)).limit(2)
+            result = await session.execute(query).unique().scalars().all()
+            return [
+                WorkersRelationshipDTO.model_validate(row, from_attributes=True)
+                for row in result
+            ]
