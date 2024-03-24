@@ -2,6 +2,10 @@ import asyncio
 import os
 import sys
 
+import uvicorn
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from queries.core import AsyncCore, SyncCore
 from queries.orm import AsyncORM, SyncORM
 
@@ -56,5 +60,20 @@ async def main():
         await AsyncORM.join_cte_subquery_window_func()
 
 
+def create_fastapi_app():
+    app = FastAPI()
+    app.add_middleware(CORSMiddleware, allow_origins=["*"])
+
+    @app.get("/workers")
+    async def get_workers():
+        return SyncORM.convert_workers_to_dto()
+
+    return app
+
+
+app = create_fastapi_app()
+
+
 if __name__ == "__main__":
     asyncio.run(main())
+    uvicorn.run(app="src.main:app", reload=True)

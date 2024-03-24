@@ -9,6 +9,7 @@ from database import (
     sync_session_factory,
 )
 from models import CVORM, WorkersORM, WorkLoad
+from schemas import WorkersRelationshipDTO
 
 
 class SyncORM:
@@ -270,6 +271,16 @@ class SyncORM:
             )
             result = session.execute(query).unique().scalars().all()
             print(result)
+
+    @staticmethod
+    def convert_workers_to_dto():
+        with sync_session_factory() as session:
+            query = select(WorkersORM).options(selectinload(WorkersORM.cvs)).limit(2)
+            result = session.execute(query).unique().scalars().all()
+            return [
+                WorkersRelationshipDTO.model_validate(row, from_attributes=True)
+                for row in result
+            ]
 
 
 # more info on limiting joinedloaded results:
