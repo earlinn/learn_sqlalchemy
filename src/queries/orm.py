@@ -9,7 +9,7 @@ from database import (
     sync_session_factory,
 )
 from models import CVORM, VacanciesORM, WorkersORM, WorkLoad
-from schemas import WorkersRelationshipDTO
+from schemas import CVsRelationshipVacanciesRepliedDTO, WorkersRelationshipDTO
 
 
 class SyncORM:
@@ -306,6 +306,12 @@ class SyncORM:
             res = session.execute(query)
             result = res.unique().scalars().all()
             print(f"{result=}")
+            return [
+                CVsRelationshipVacanciesRepliedDTO.model_validate(
+                    row, from_attributes=True
+                )
+                for row in result
+            ]
 
 
 # more info on limiting joinedloaded results:

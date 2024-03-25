@@ -70,6 +70,10 @@ def create_fastapi_app():
     async def get_workers():
         return SyncORM.convert_workers_to_dto()
 
+    @app.get("/cvs")
+    async def get_cvs():
+        return SyncORM.select_cvs_with_all_relationships()
+
     return app
 
 
