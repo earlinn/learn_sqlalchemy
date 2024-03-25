@@ -48,6 +48,8 @@ async def main():
         SyncORM.select_workers_with_condition_relationship()
         SyncORM.select_workers_with_condition_relationship_contains_eager()
         SyncORM.select_workers_with_condition_relationship_contains_eager_with_limit()
+        SyncORM.insert_vacancies_and_replies()
+        SyncORM.select_cvs_with_all_relationships()
 
     elif "--orm" in sys.argv and "--async" in sys.argv:
         await AsyncORM.create_tables()

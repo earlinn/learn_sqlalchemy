@@ -8,7 +8,7 @@ from database import (
     sync_engine,
     sync_session_factory,
 )
-from models import CVORM, WorkersORM, WorkLoad
+from models import CVORM, VacanciesORM, WorkersORM, WorkLoad
 from schemas import WorkersRelationshipDTO
 
 
@@ -281,6 +281,31 @@ class SyncORM:
                 WorkersRelationshipDTO.model_validate(row, from_attributes=True)
                 for row in result
             ]
+
+    @staticmethod
+    def insert_vacancies_and_replies():
+        with sync_session_factory() as session:
+            new_vacancy = VacanciesORM(title="Python разработчик", compensation=100000)
+            cv_1 = session.get(CVORM, 1)
+            cv_2 = session.get(CVORM, 2)
+            cv_1.vacancies_replied.append(new_vacancy)
+            cv_2.vacancies_replied.append(new_vacancy)
+            session.commit()
+
+    @staticmethod
+    def select_cvs_with_all_relationships():
+        # load_only - подгрузить только нужные столбцы из модели вакансии
+        with sync_session_factory() as session:
+            query = (
+                select(CVORM)
+                .options(joinedload(CVORM.worker))
+                .options(
+                    selectinload(CVORM.vacancies_replied).load_only(VacanciesORM.title)
+                )
+            )
+            res = session.execute(query)
+            result = res.unique().scalars().all()
+            print(f"{result=}")
 
 
 # more info on limiting joinedloaded results:

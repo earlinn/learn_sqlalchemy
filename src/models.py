@@ -71,6 +71,10 @@ class CVORM(Base):
 
     worker: Mapped["WorkersORM"] = relationship(back_populates="cvs")
 
+    vacancies_replied: Mapped[list["VacanciesORM"]] = relationship(
+        back_populates="cvs_replied", secondary="vacancies_replies"
+    )
+
     # переопределение этих параметров класса Base:
     repr_cols_num = 2
     repr_cols = ("created_at",)
@@ -83,8 +87,31 @@ class CVORM(Base):
     )
 
 
-metadata_obj = MetaData()
+class VacanciesORM(Base):
+    __tablename__ = "vacancies"
 
+    id: Mapped[intpk]
+    title: Mapped[str_256]
+    compensation: Mapped[int | None]
+
+    cvs_replied: Mapped[list["CVORM"]] = relationship(
+        back_populates="vacancies_replied", secondary="vacancies_replies"
+    )
+
+
+class VacanciesRepliesORM(Base):
+    __tablename__ = "vacancies_replies"
+
+    cv_id: Mapped[int] = mapped_column(
+        ForeignKey("cvs.id", ondelete="CASCADE"), primary_key=True
+    )
+    vacancy_id: Mapped[int] = mapped_column(
+        ForeignKey("vacancies.id", ondelete="CASCADE"), primary_key=True
+    )
+    cover_letter: Mapped[str | None]
+
+
+metadata_obj = MetaData()
 
 # imperative mapping style
 workers_table = Table(
@@ -109,4 +136,12 @@ cvs_table = Table(
         server_default=text("TIMEZONE('utc', now())"),
         onupdate=datetime.utcnow,
     ),
+)
+
+vacancies_table = Table(
+    "vacancies",
+    metadata_obj,
+    Column("id", Integer, primary_key=True),
+    Column("title", String),
+    Column("compensation", Integer, nullable=True),
 )
