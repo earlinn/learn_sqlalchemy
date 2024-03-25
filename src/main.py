@@ -48,6 +48,7 @@ async def main():
         SyncORM.select_workers_with_condition_relationship()
         SyncORM.select_workers_with_condition_relationship_contains_eager()
         SyncORM.select_workers_with_condition_relationship_contains_eager_with_limit()
+        SyncORM.convert_workers_to_dto()
         SyncORM.insert_vacancies_and_replies()
         SyncORM.select_cvs_with_all_relationships()
 
@@ -60,6 +61,15 @@ async def main():
         await AsyncORM.select_cvs_avg_compensation()
         await AsyncORM.insert_additional_cvs()
         await AsyncORM.join_cte_subquery_window_func()
+        await AsyncORM.select_workers_with_lazy_relationship()
+        await AsyncORM.select_workers_with_joined_relationship()
+        await AsyncORM.select_workers_with_selectin_relationship()
+        await AsyncORM.select_workers_with_condition_relationship()
+        await AsyncORM.select_workers_with_condition_relationship_contains_eager()
+        await AsyncORM.select_workers_with_relationship_contains_eager_with_limit()
+        await AsyncORM.convert_workers_to_dto()
+        await AsyncORM.insert_vacancies_and_replies()
+        await AsyncORM.select_cvs_with_all_relationships()
 
 
 def create_fastapi_app():

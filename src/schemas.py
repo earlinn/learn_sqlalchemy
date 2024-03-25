@@ -50,6 +50,16 @@ class VacanciesDTO(VacanciesPostDTO):
     id: int
 
 
+class VacanciesWithoutCompensationDTO(BaseModel):
+    id: int
+    title: str
+
+
 class CVsRelationshipVacanciesRepliedDTO(CVsDTO):
     worker: "WorkersDTO"
     vacancies_replied: list["VacanciesDTO"]
+
+
+class CVsRelationshipVacanciesRepliedWithoutCompensationDTO(CVsDTO):
+    worker: "WorkersDTO"
+    vacancies_replied: list["VacanciesWithoutCompensationDTO"]

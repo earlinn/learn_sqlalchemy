@@ -9,7 +9,11 @@ from database import (
     sync_session_factory,
 )
 from models import CVORM, VacanciesORM, WorkersORM, WorkLoad
-from schemas import CVsRelationshipVacanciesRepliedDTO, WorkersRelationshipDTO
+from schemas import (
+    CVsRelationshipVacanciesRepliedDTO,
+    CVsRelationshipVacanciesRepliedWithoutCompensationDTO,
+    WorkersRelationshipDTO,
+)
 
 
 class SyncORM:
@@ -103,8 +107,7 @@ class SyncORM:
                 .having(func.avg(CVORM.compensation).cast(Integer) > 70000)
             )
             print(query.compile(compile_kwargs={"literal_binds": True}))
-            res = session.execute(query)
-            result = res.all()
+            result = session.execute(query).all()
             print(result[0].avg_compensation)
 
     @staticmethod
@@ -303,8 +306,7 @@ class SyncORM:
                     selectinload(CVORM.vacancies_replied).load_only(VacanciesORM.title)
                 )
             )
-            res = session.execute(query)
-            result = res.unique().scalars().all()
+            result = session.execute(query).unique().scalars().all()
             print(f"{result=}")
             return [
                 CVsRelationshipVacanciesRepliedDTO.model_validate(
@@ -411,8 +413,7 @@ class AsyncORM:
                 .having(func.avg(CVORM.compensation) > 70000)
             )
             print(query.compile(compile_kwargs={"literal_binds": True}))
-            res = await session.execute(query)
-            result = res.all()
+            result = (await session.execute(query)).all()
             print(result[0].avg_compensation)
 
     @staticmethod
@@ -507,16 +508,139 @@ class AsyncORM:
             ).cte("helper2")
             query = select(cte).order_by(cte.c.compensation_diff.desc())
             print(query.compile(compile_kwargs={"literal_binds": True}))
-            res = await session.execute(query)
-            result = res.scalars().all()
+            result = (await session.execute(query)).scalars().all()
             print(f"{result=}")
+
+    @staticmethod
+    async def select_workers_with_lazy_relationship():
+        async with async_session_factory() as session:
+            query = select(WorkersORM)
+            result = (await session.execute(query)).scalars().all()
+            print(f"{result=}")
+
+            # worker_1_resumes = result[0].resumes  # -> Приведет к ошибке
+            # Нельзя использовать ленивую подгрузку в асинхронном варианте!
+
+            # Ошибка: sqlalchemy.exc.MissingGreenlet: greenlet_spawn has not been
+            # called; can't call await_only() here.
+            # Was IO attempted in an unexpected place? (Background on this error at:
+            # https://sqlalche.me/e/20/xd2s)
+
+            # worker_1_cvs = result[0].cvs
+            # print(worker_1_cvs)
+            # worker_2_cvs = result[1].cvs
+            # print(worker_2_cvs)
+
+    @staticmethod
+    async def select_workers_with_joined_relationship():
+        # joinedload - для m2o и o2o (ниже не тот случай)
+        async with async_session_factory() as session:
+            query = select(WorkersORM).options(joinedload(WorkersORM.cvs))
+            result = (await session.execute(query)).unique().scalars().all()
+            worker_1_cvs = result[0].cvs
+            print(worker_1_cvs)
+            worker_2_cvs = result[1].cvs
+            print(worker_2_cvs)
+
+    @staticmethod
+    async def select_workers_with_selectin_relationship():
+        # selectinload - для o2m (наш случай) и m2m
+        async with async_session_factory() as session:
+            query = select(WorkersORM).options(selectinload(WorkersORM.cvs))
+            result = (await session.execute(query)).unique().scalars().all()
+            worker_1_cvs = result[0].cvs
+            print(worker_1_cvs)
+            worker_2_cvs = result[1].cvs
+            print(worker_2_cvs)
+
+    @staticmethod
+    async def select_workers_with_condition_relationship():
+        async with async_session_factory() as session:
+            query = select(WorkersORM).options(selectinload(WorkersORM.cvs_parttime))
+            result = (await session.execute(query)).unique().scalars().all()
+            print(result)
+
+    @staticmethod
+    async def select_workers_with_condition_relationship_contains_eager():
+        async with async_session_factory() as session:
+            query = (
+                select(WorkersORM)
+                .join(WorkersORM.cvs)
+                .options(contains_eager(WorkersORM.cvs))
+                .filter(CVORM.workload == "parttime")
+            )
+            result = (await session.execute(query)).unique().scalars().all()
+            print(result)
+
+    @staticmethod
+    async def select_workers_with_relationship_contains_eager_with_limit():
+        async with async_session_factory() as session:
+            subq = (
+                select(CVORM.id.label("parttime_cv_id"))
+                .filter(CVORM.worker_id == WorkersORM.id)
+                .order_by(WorkersORM.id.desc())
+                .limit(1)
+                .scalar_subquery()
+                .correlate(WorkersORM)
+            )
+            query = (
+                select(WorkersORM)
+                .join(CVORM, CVORM.id.in_(subq))
+                .options(contains_eager(WorkersORM.cvs))
+            )
+            result = (await session.execute(query)).unique().scalars().all()
+            print(result)
 
     @staticmethod
     async def convert_workers_to_dto():
         async with async_session_factory() as session:
             query = select(WorkersORM).options(selectinload(WorkersORM.cvs)).limit(2)
-            result = await session.execute(query).unique().scalars().all()
+            result = (await session.execute(query)).unique().scalars().all()
             return [
                 WorkersRelationshipDTO.model_validate(row, from_attributes=True)
+                for row in result
+            ]
+
+    @staticmethod
+    async def insert_vacancies_and_replies():
+        async with async_session_factory() as session:
+            new_vacancy = VacanciesORM(title="Python разработчик", compensation=100000)
+            get_cv_1 = (
+                select(CVORM)
+                .options(selectinload(CVORM.vacancies_replied))
+                .filter_by(id=1)
+            )
+            get_cv_2 = (
+                select(CVORM)
+                .options(selectinload(CVORM.vacancies_replied))
+                .filter_by(id=2)
+            )
+            cv_1 = (await session.execute(get_cv_1)).scalar_one()
+            cv_2 = (await session.execute(get_cv_2)).scalar_one()
+            cv_1.vacancies_replied.append(new_vacancy)
+            cv_2.vacancies_replied.append(new_vacancy)
+            await session.commit()
+
+    @staticmethod
+    async def select_cvs_with_all_relationships():
+        # load_only - подгрузить только нужные столбцы из модели вакансии
+        async with async_session_factory() as session:
+            query = (
+                select(CVORM)
+                .options(joinedload(CVORM.worker))
+                .options(
+                    selectinload(CVORM.vacancies_replied).load_only(VacanciesORM.title)
+                )
+            )
+            result = (await session.execute(query)).unique().scalars().all()
+            print(f"{result=}")
+            # Обратите внимание, что созданная в видео модель содержала лишний столбец
+            # compensation. И так как он есть в схеме ResumesRelVacanciesRepliedDTO,
+            # столбец compensation был вызван Алхимией через ленивую загрузку.
+            # В асинхронном варианте это приводило к краху программы.
+            return [
+                CVsRelationshipVacanciesRepliedWithoutCompensationDTO.model_validate(
+                    row, from_attributes=True
+                )
                 for row in result
             ]
