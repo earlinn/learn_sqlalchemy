@@ -1,8 +1,10 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from sqlalchemy import URL
 
 # If the password contains '@' symbol, we need to create the DB urls via URL.create,
 # otherwise the part of the password after '@' will be considered the DB hostname
+
+# Finally I changed the postgres user password to not contain @, otherwise there
+# would be errors when creating migrations via alembic
 
 # We need to create a database with the name specified in DB_NAME in advance
 
@@ -16,24 +18,16 @@ class Settings(BaseSettings):
 
     @property
     def database_url_asyncpg(self):
-        return URL.create(
-            "postgresql+asyncpg",
-            self.DB_USER,
-            self.DB_PASSWORD,
-            self.DB_HOST,
-            self.DB_PORT,
-            self.DB_NAME,
+        return (
+            f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:"
+            f"{self.DB_PORT}/{self.DB_NAME}"
         )
 
     @property
     def database_url_psycopg(self):
-        return URL.create(
-            "postgresql+psycopg",
-            self.DB_USER,
-            self.DB_PASSWORD,
-            self.DB_HOST,
-            self.DB_PORT,
-            self.DB_NAME,
+        return (
+            f"postgresql+psycopg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:"
+            f"{self.DB_PORT}/{self.DB_NAME}"
         )
 
     model_config = SettingsConfigDict(env_file=".env")
