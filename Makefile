@@ -8,3 +8,20 @@ alembic-init:
 # а все как на видео, а в pgadmin4 у БД sa_alembic появилась таблица alembic_version
 makemig:
 	alembic revision --autogenerate
+
+makemig-named:
+	alembic revision --autogenerate -m "migration 2"
+
+# создать файл с пустой миграцией, которую затем можно заполнить вручную
+makemig-empty:
+	alembic revision
+
+migrate:
+	alembic upgrade head
+
+undo-all-migrations:
+	alembic downgrade base
+
+# вставить номер миграции, до которой надо откатиться
+undo-migrations:
+	alembic downgrade f111dde6790b
